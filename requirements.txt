@@ -1,0 +1,6 @@
+# requirements.txt
+PyQt5
+pyqtgraph
+psutil
+GPUtil
+pyamdgpuinfo
