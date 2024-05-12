@@ -1,0 +1,625 @@
+# Processor-Dependent Malware... and codes+
+Footnote †: thanks: The present paper is the extended version of the work presented at the ‘AWACS’09. Conference
+
+Anthony Desnos
+
+1ESIEA - \((C+V)^{O}\), 38 rue des Dr Calmette et Guerin, 53 000 Laval, France 1{desmos,filiol}@esiea.fr
+
+Robert Erra
+
+2ESIEA - SI&S, 9 rue Vsale, 75 005 Paris, France, 2erra@esiea.fr
+
+Eric Filiol
+
+1ESIEA - \((C+V)^{O}\), 38 rue des Dr Calmette et Guerin, 53 000 Laval, France 1{desmos,filiol}@esiea.fr
+
+###### Abstract
+
+Malware usually target computers according to their operating system. Thus we have Windows malwares, Linux malwares and so on ...In this paper, we consider a different approach and show on a technical basis how easily malware can recognize and target systems selectively, according to the onboard processor chip. This technology is very easy to build since it does not rely on deep analysis of chip logical gates architecture. Floating Point Arithmetic (FPA) looks promising to define a set of tests to identify the processor or, more precisely, a subset of possible processors. We give results for different families of processors: AMD, Intel (Dual Core, Atom), Sparc, Digital Alpha, Cell, Atom ...As a conclusion, we propose two _open problems_ that are new, to the authors' knowledge.
+
+## 1 Introduction
+
+From the beginning of malware history (circa 1996), malware are:
+
+* either operating system specific (Windows *.*, Unices, Mac, ...);
+* or application specific (e.g. macro viruses);
+* or protocol dependent (e.g. _Conficker_ versus _Slammer_).
+
+We will use the following and large definition of a malware: it is a _malicious code_ like a virus, a worm, a spyware, a Trojan horse... whose aim is to undermine system's confidentiality, integrity or availability.
+
+At the present time, there are quite no hardware specific malwares, even if some operating system are themselves hardware dependent (e.g. _Symbian_ malwares). Recently, GPGPU malware [10] have been proposed but they just exploit the fact that graphic cards are just distinct devices with quite the same features and capability as the system they are connected to. They do not really condition their action on new computing features. GPGPU malware strongly depend on the graphic card type (CUDA or OpenCL enabled).
+
+We propose here to investigate the following critical issue: _is it possible to design malware - or more generally, any program - that operate beyond operating system and application types and varieties_? More precisely, we want:
+* going beyond operating system and application types/varieties ...;
+* while exploiting hardware specificities.
+
+If such an approach is possible, this would:
+
+* enable far more precise and targeted attacks, at a finer level (surgical strikes) in a large network of heterogeneous machines but with generic malware;
+* and represent a significant advantage in a context of cyberwarfare.
+
+The recent case of the_StuxNet_ worm shows that targeted attacks towards PLC components are nowadays a major concern in cyberattacks. However, while it can be very difficult to forecast and envisage which kind of applications is likely to be present on the target system (it can be a secret information), the variety in terms of hardware - and especially as far as processors are concerned - is far more reduced due to the very limited number of hardware manufacturers. We propose to consider _processor-dependent malware_ and to rely on the onboard processor, which seems a good candidate to design hardware dependent software (a malware is indeed a software).
+
+To design such _dependent processor malware_, we need to identify the processor as precisely as possible. This is possible thanks to a different ways:
+
+* by reversing existing binaries (but this provides a limited information since a given binary can indifferently execute on several processors like Intel x86s or AMDs chips),
+* classical intelligence gathering...
+
+There is a large spectrum of possibilities to collect this technical intelligence. But there is a bad news: deriving knowledge about processor internals is tricky and require a lot of work. Instead of analyzing processor logic gates architecture, we propose to work at the higher level: _to exploit mathematical perfection versus processor reality_.
+
+This paper is organized as follows. Section 2 sets up the theoretical background which make hardware-dependent malware possible. Then Section 3 exposes how to exploit processors' mathematical limitations in order to make programs' execution vary according to the processor in place. Section 4 then gives implementation and experimental results before concluding and presenting future work in Section 5.
+
+## 2 Theoretical Background
+
+### Starting From a Formal Model of Malware - Notation
+
+We consider the formal model given by Zuo and Zhou in 2004 [22], Zuo, Zhou and Zhu in 2005 [22] and Filiol in 2004 [11].
+
+* Sets \(\mathbb{N}\) and \(S\) are the set of natural integers and the set of all finite sequences of such integers, respectively.
+* Let \(s_{1},s_{2},\ldots,s_{n}\) be elements from \(S\).
+* Let \(<s_{1},s_{2},\ldots,s_{n}>\) describe an injective computable function from \(S^{n}\) to \(\mathbb{N}\) whose inverse function is computable as well.
+* If we consider a partial computable function \(f:\mathbb{N}\rightarrow\mathbb{N}\), then \(f(s_{1},s_{2},\ldots,s_{n})\) describes \(f(<s_{1},s_{2},\ldots,s_{n}>)\) in an abridged way. * This notation extends to any \(n\)-tuple of integers \(i_{1},i_{2},\ldots,i_{n}\).
+* For a given sequence \(p=(i_{1},i_{2},\ldots,i_{k},\ldots,i_{n})\in S\), we denote \(p[j_{k}/i_{k}]\) the sequence \(p\) in which the term \(i_{k}\) has been replaced by \(j_{k}\), let say \(p[j_{k}/i_{k}]=(i_{1},i_{2},\ldots,j_{k},\ldots,i_{n})\).
+* If the element \(i_{k}\) of sequence \(p\) is computed by a computable function \(v\) (equivalently compute \(p[v(i_{k})/i_{k}]\)), let us adopt the equivalent abridged notation \(p[v(i_{k})]\) in which the underlined symbol describes the computed element.
+* In the general case (compute more than one element at the same time in \(p\)), we note \(p[v_{1}(\underline{i_{k_{1}}}),v_{2}(\underline{i_{k_{2}}}),\ldots,v_{l}( \underline{i_{k_{1}}})]\).
+
+Now that everything to model programs has been given, let us define things at a higher level formally: program, data and operating system.
+
+* We describe by \(\phi_{P}(d,p)\) a function which is computed by a program \(P\) in the environment \((d,p)\). * \(d\) and \(p\) are denoting data in the environment (including clock, mass memories and equivalent structures or devices) and programs (including those of the operating system itself) respectively. * That environment corresponds in fact to the operating system which has been extended to the activity of one or more users.
+* When considering the Godel coding \(e\) for the program \(P\), we use the notation \(\phi_{e}(d,p)\). Its definition domain is then denoted by \(W_{e}\) while his image space is denoted \(E_{e}\).
+
+### Exploring the Viral Classes
+
+Let us give the general formal definition of computer viruses (most complete case) with the following definition. However this definition can be extended to any other kind (non self-reproducing) malware and more generally to any program, eventually by dropping the self-reproduction properties off.
+
+**Definition 1**: _(Non Resident Virus) A total recursive function \(v\) is a non resident virus if for every program \(i\), we have:_
+
+1. \(\phi_{v(i)}(d,p)=\left\{\begin{array}[]{ll}D(d,p),&\mbox{if }T(d,p)\ (i)\ \ \ (\mbox{\rm Added Fonctionnality})\\ \phi_{i}(d,p[v(S(p)])]&\mbox{if }I(d,p)\ (ii)\ \ (\mbox{\rm Infection})\\ \phi_{i}(d,p),&\mbox{otherwise }(iii)\ \mbox{\rm(Imitation)}\end{array}\right.\)__
+2. \(T(d,p)\) _and_ \(I(d,p)\) _are two recursive predicates such that there is no value_ \(<d,p>\) _that satisfies them both at the same time. Moreover both functions_ \(D(d,p)\) _et_ \(S(p)\) _are recursive._
+3. _The set_ \(\{<d,p>:\neg(T(d,p)\lor I(d,p))\}\) _is infinite._
+The two predicates \(T(d,p)\) and \(I(d,p)\) represent the payload and the infection trigger conditions respectively. Whenever \(T(d,p)\) is true, the virus executes the payload \(D(d,p)\) while whenever \(I(d,p)\) is true, the virus selects a target program by means of the selection function \(S(p)\) and then infects it. Finally the original program \(i\) is executed (host program). For a virus kernel: the set of functions \(D(d,p)\) and \(S(p)\) with predicates \(T(d,p)\) and \(I(d,p)\): the virus kernel describes the malware in a univoqual way. This model can be extended to other form of malware (more sophisticated viruses, Trojan...).
+
+#### Polymorphic and Metamorphic Viruses
+
+**Definition 2**: _The pair \((v,v^{\prime})\) of total recursive functions \(v\) and \(v^{\prime}\) is called Polymorphic virus with two forms if for every program \(i\) we have_
+
+\[\phi_{v(i)}(d,p)=\left\{\begin{array}[]{ll}D(d,p),&\mbox{if }T(d,p)\\ \phi_{i}(d,p[v^{\prime}(\underline{S(p)})]),&\mbox{if }I(d,p)\\ \phi_{i}(d,p),&\mbox{otherwise}\end{array}\right.\]
+
+_and_
+
+\[\phi_{v^{\prime}(i)}(d,p)=\left\{\begin{array}[]{ll}D(d,p),&\mbox{if }T(d,p) \\ \phi_{i}(d,p[v(\underline{S(p)})]),&\mbox{if }I(d,p)\\ \phi_{i}(d,p),&\mbox{otherwise}\end{array}\right.\]
+
+Whenever predicate \(I(d,p)\) is true the virus selects a target program by means of \(S(p)\), infects it then transfers control back to the host program \(x\). \(S(p)\) is performing the code mutation as well.
+
+**Definition 3**: _Let \(v\) and \(v^{\prime}\) be two different total recursive functions. The pair \((v,v^{\prime})\) is called metamorphic virus if for every program \(i\), then the pair \((v,v^{\prime})\) satisfies:_
+
+\[\phi_{v(i)}(d,p)=\left\{\begin{array}[]{ll}D(d,p),&\mbox{if }\ T(d,p)\\ \phi_{i}(d,p[v^{\prime}(\underline{S(p)})]),&\mbox{if }\ I(d,p)\\ \phi_{i}(d,p),&
+### Stealth Viruses
+
+Definition 4: The pair \((v,\mathit{sys})\) made of a total recursive function \(v\) and a system call sys (a recursive function as well) is a stealth virus with respect to the system call sys, if there exists a recursive function \(h\) such that for every program \(i\) we have:
+
+\[\phi_{v(i)}(d,p)=\left\{\begin{array}[]{ll}D(d,p),&\mbox{if }T(d,p)\\ \phi_{i}(d,p[v(\underline{S(p)}),h(\mathit{sys})])&\mbox{is }I(d,p)\\ \phi_{i}(d,p),&\mbox{otherwise}\end{array}\right.\]
+
+et
+
+\[\phi_{h}(\mathit{sys})(i)=\left\{\begin{array}[]{ll}\phi_{\mathit{sys}}(y),& \mbox{if }x=v(y)\\ \phi_{\mathit{sys}}(i),&\mbox{otherwise}\end{array}\right.\]
+
+Let us point out that \(\mathit{stealth}\) is a relative concept (with respect to a given set of system calls).
+
+### Practical Utility of the Formal Model: What Does the Model Show Us
+
+We must identify and use a feature that will make a virus (in the general case, a malware) operate whether a given type of processor chip is present or not. In the previous formal definition, whatever may be the class of virus, the obvious candidates for usable features are predicates \(T(d,p)\) and \(I(d,p)\) (payload and infection trigger conditions respectively). In the optimal case, we are interested in considering two different features to control and manage payload triggering and infection control separately and independently. So:
+
+* Code mutation and stealth can also be managed with respect to specific processors in the same way. * As an example a malware will enforce Hardware Virtual Machine-based rootkit techniques whenever present. * Code mutation (e.g metamorphism) will be activated only if a suitable processor instruction set is available.
+* This approach, yet formal, gives a powerful insight of how design processor-dependent malware.
+* This enables to reduce the problem of side effects significantly, that may betray the activity of a malware.
+
+## 3 Exploiting Mathematical Processor Limitations
+
+In order to use processor to discriminate programs' action and execution, we are going to exploit the fact that first there is a huge difference between the mathematical reality and their implementation in computing systems and second that that difference is managed in various ways according to the processor brand, model and type.
+### Mathematical perfection versus Processor Reality
+
+Let us begin with a very classical example: the algorithm given in Table 1. We can ask: _what does this code (really) compute?_
+
+```
+1: The \(\sqrt{\phantom{x}}\) problem Input: -- a real \(A\); Output: -- a boolean \(B\) Begin: \(B=\sqrt{A}*\sqrt{A}\); Return[A==B]; End. ```
+
+**Algorithm 1** The \(\sqrt{\phantom{x}}\) problem
+
+Well, let us suppose we choose \(A=2.0\) as input for this _Square-root_ algorithm, we then have two possible answers, that are quite _opposite_:
+
+1. _Mathematically_**True** is returned;
+2. _Practically_: **False** is returned!
+
+Let us now explain why we have this different output. This come from the fact that processors:
+
+* have an increasing (architecture) complexity and size,
+* have bugs, known and unknown (not published),
+* use floating point arithmetic,
+* use generally "secret" algorithms for usual arithmetic functions like \(1/x\),\(\sqrt{x}\), \(1/\sqrt{x}\) ...that can be computed: 1. at the _hardware_ level; 2. and/or at the _software_ level.
+
+As an example of a "secret algorithm", let us cite the famous Pentium Bugs _case_ in 1994: Intel has never published neither the _correct_ algorithm nor its bugged version used for the division but some researchers have tried reverse engineering techniques to understand which algorithm was programmed actually (for instance, the reader will refer to the (beautiful) paper [12]).
+
+Let us now consider the following problem: _can we define a set of (simple) tests to know on which processor we are?_ As a practical example: _is it possible to know whether we are on a mobile phone or on a computer?_
+
+The Intel Assembly Language instruction **CPUID** can be used both on Intel and AMD processors, but it has at least two severe drawbacks:
+
+* it is easy to "find" it whenever scanning the file (malware detection issue);
+* some other processors cannot recognize and process this instruction.
+
+\begin{table} \begin{tabular}{l}
+**Algorithm 1** : The \(\sqrt{\phantom{x}}\) problem \\
+**Input**: — a real \(A\); \\
+**Output**: — a boolean \(B\) \\
+**Begin**: \\ \(B=\sqrt{A}*\sqrt{A}\); \\
+**Return[A==B]**; \\
+**End.** \\ \end{tabular} \end{table} Table 1: The Square-root problem
+### Processor Bugs
+
+Known or unknown bugs are good candidates to design such a set of tests and hence to discriminate processors:
+
+* as an instance of such bug/test, it is easy determine whether we use a 1994 bugged Pentium or not: just use the numerical value that makes appear the _Pentium Division Bug_;
+* but a lot of bugs will _freeze_ the computer only (this can be used for processor-dependent denial of service [DoS] however);
+* and it is not so simple to find a list of bugs, even if there are supposed to be "known".
+
+So in this paper, we will not use bugs _unless_ they involve a floating point arithmetic operator. However it is worth keeping in mind that the knowledge of some bugs (by the manufacturer, a Nation State...) can be efficiently used to target processors specifically and hence it represents a critical knowledge not to say a strategic one. Worse, hiding such bugs or managing floating arithmetics in a very specific way is more than interesting.
+
+More generally let us consider some differences that exist event within the same type of processors but produced in two different versions: a national and an "export" version. As an example, we can consider the popcount function which compute the Hamming weight of an integer (the number of 1s in its binary form). Since it is a critical function in the context of cryptanalysis, the national version of a few processors have this function implemented in hardware while the export version just emulate it at the software level. Consequently a good way to discriminate national version from export version consists in computing Hamming weight a large number of times and then to record the computation time: it will be significantly higher for the export version which hence can be specifically targeted by a malware attack.
+
+### Using Floatinf Point Arithmetics: The IEEE P754 Standard
+
+The IEEE P754 standard [10] has been approved as a norm by IEEE ANSI in 1985. A lot of processors follow and comply to it but some processors do not. As an example, let us mention the CRAY 1 or DEC VAX 780. Moreover, not all microcontrollers follow this standard either.
+
+This norm does not impose the algorithms to compute usual functions lke \(1/x\),\(\sqrt{x}\), \(1/\sqrt{x}\) or \(e^{x}\). It just gives a specification for the four basic operations: addition, substraction, multiplication and division. So, for all other functions, there is very likely to exist differences as far as their implementation as algorithms are concerned. But we have to find them!
+
+For 32-bit, environments, we have (see Table 2):
+
+* 1 bit for the sign;
+* 23 bits for the mantissa;
+* 8 bits for the exponent (integer).
+The floating point arithmetic has a lot of curiosities, let us see some of them. One can find in [1, 2] the following questions due to Rump:
+
+* Evaluate the expression \[F(X,\,Y)=\frac{(1682XY^{4}+3X^{3}+29XY^{2}-2X^{5}+832)}{107751}\] with \(X=192119201\) and \(Y=35675640\). The "exact" result is 1783 but numerically we can have a very different value like \(-7.18056\,10^{20}\) (on a 32-bit IEEE P754 compliant processor).
+* Evaluate the expression \[P(X)=8118X^{4}-11482X^{3}+X^{2}+5741X-2030\] with \(X=1/\sqrt{2}\) and \(X=0.707\). The "exact" result is 0 but numerically we can have a very different value like \(-2.74822\,10^{-8}\) (on a 32-bit IEEE P754 compliant processor).
+
+Let us recall that the numerical value of an algebraic expression depends (generally) on the compiler because a non basic numerical expression result depends strongly on the order of the intermediate computations.
+
+## 4 Implementation and Experimental Results
+
+Now we have defined and illustrated the core principle of our approach, let us consider a few implementations we have considered as well as the corresponding results.
+
+### The Gentleman Code or How to Compute the Word Length
+
+If we want to know on which processor we are working, we need to find, before anything else, two critical information:
+
+1. the first thing is to find the _base_ value used to represent numbers;
+2. the second is the _word length_, _i.e._ the number of bits the processor is used to work (with floating point numbers for example).
+
+For the base value, it is easy to conjecture that the base is 2, at least for modern processors. As far as the the word length is concerned, we have not found any numerical algorithm that is able to answer this question but we have found something very close. The algorithm given in Table 3 called the _Gentleman Code_[1, 2] is surprisingly very interesting for both problems. First we can again ask: _what does this code (really) compute?_ Well, again, we have two possible answers:
+
+\begin{table} \begin{tabular}{|c|c|c|} \hline sign(x) & mantissa(x) & exponent(x) \\
+1 bit & 23 bits & 8 bits \\ \hline \end{tabular} \end{table} Table 2: Structure of 32-bit float “numbers” in the IEEE P754 Standard
+1. _Mathematically_: the two loops are theoretically _infinite loops_ so they are looping forever;
+2. _Practically_ (see [14]): * \(\log_{2}(A)\) gives the number of bits used by the mantissa of floating point numbers; * \(B\) is the base used by the floating point arithmetic of the environment (generally it is equal to 2).
+
+Both values are of course _processor-dependent_ constants. So, with a small program, which has a polynomial time complexity, we can compute the number of bits used to represent the _mantissa_ of any floating point number and so, we can deduce the word length.
+
+### Some Basic (but Yet Too) Simple Tests
+
+Let us give a first list of tests we have tried (Table 4).
+
+
+
+So these tests are interesting but not completely useful, this shows that we can simply know whether the processor follows the IEEE P754 arithmetic norm or not. For these simple expression, all processors that are IEEE P754 compliant will give the same answers. Hence, this is not enough.
+
+### Some Less Basic Tests
+
+With the following constant definitions in our test program in C, we obtain the results given in Tables 5 and 6.
+
+* #define Pi1 3.141592653
+* #define Pi2 3.141592653589
+* #define Pi3 3.141592653589793
+
+\begin{table} \begin{tabular}{l l} \hline \hline
+**Algorithm** & 2 : & The Gentleman Code \\ \multicolumn{2}{l}{**Input**: — A=1.0 ; B=1.0; } \\ \multicolumn{2}{l}{**Output**: — \(A,B\)} \\ \multicolumn{2}{l}{**Begin**: } \\ \multicolumn{2}{l}{A=1.0; } \\ \multicolumn{2}{l}{B=1.0;} \\ \multicolumn{2}{l}{**While** ((A+1.0)-A)-1.0===0 ; } \\ \multicolumn{2}{l}{A=2*A;} \\ \multicolumn{2}{l}{**While** ((A+B)-A)-B==0 ; } \\ \multicolumn{2}{l}{B=B+1.0;} \\ \multicolumn{2}{l}{**Return**[A,B];} \\ \multicolumn{2}{l}{**End.**} \\ \hline \hline \end{tabular} \end{table} Table 3: The Gentleman code
+* #define Pi4 3.1415926535897932385
+
+These results are more interesting, especially those in the third column (the numerical computation of \(\sin(10^{37}\pi_{1})\)) in Table 5: a simple computation gives four subclasses of the set of processors (emphasized by a double horizontal lign between the subclasses).
+
+\begin{tabular}{|c||c|c|c|c||} \hline Processor & \multicolumn{4}{c|}{Tests} \\ \hline  & 1.2-0.8 \(==\) 0.4 & 0.1+0.1 \(==\) 0.2 & 0.1+0.1+0.1 \(==\) 0.3 & 0.1+\(\ldots\) 0.1 \(==\) 1.0 \\ \hline \hline VAX 750 & Yes & Yes & No & No \\ \hline AMD 32 & No & Yes & No & No \\ \hline AMD 64 & No & Yes & No & No \\ \hline ATOM & No & Yes & No & No \\ \hline INTEL DC & No & Yes & No & No \\ \hline MIPS 12000 & No & Yes & No & No \\ \hline dsPIC33FJ21 & No & Yes & Yes & No \\ \hline IPHONE 3G & No & Yes & No & No \\ \hline \end{tabular}
+
+**Table 4.** A few easy computations
+
+\begin{tabular}{|c||c|c|c|c||} \hline Processor & \(\sin(10^{10}\pi_{1})\) & \(\sin(10^{17}\pi_{1})\) & \(\sin(10^{37}\pi_{1})\) & \(\sin(10^{17}\pi_{1})==\sin(10^{17}\pi_{2})\) \\ \hline \hline IPHONE 3G & 0.375... & 0.423... & -0.837... & No \\ \hline AMD 32 & 0.375... & 0.424... & -0.837... & No \\ \hline AMD 64 & 0.375.. & 0.424.. & 0.837... & No \\ \hline ATOM & 0.375.. & 0.423.. & -0.832.. & No \\ \hline INTEL DC & 0.375... & 0.423... & -0.832... & No \\ \hline MIPS 12000 & 0.375... & 0.423... & -0.832... & No \\ \hline \hline dsPIC33 & _0.81..._ & _0.62..._ & _-0.44..._ & _Yes_ \\ \hline \end{tabular}
+
+**Table 5.** Computation of \(\sin(10^{10}\pi)\) for various numerical values of the constant \(\pi\)
+### Do Not Forget the _Influence_ of the Compiler
+
+Let us give a last example. We want to compute the generalized sum
+
+\[s(N):=\sum_{i=1}^{N}10^{N}\] (1)
+
+The "exact" value is of course \(N*10^{N}\), but let us have a look at the Table 7 to see some values we can have when computing \(s(N)-N*10^{N}\).
+
+
+
+However we have to point out that the results of the Table 7) heavily depend of course of the processor but _also_ of the compiler used, of the options used and so on ...
+
+More work has to be done to better understand these aspects. Nonetheless, we have here new insights on how design more specific attacks when considering the processor type AND the compiler version/type as the same time.
+
+## 5 Conclusion and Future Work: Two interesting Open Problems
+
+Floating Point Arithmetic (FPA) looks promising to define a set of tests enabling to identify the processor or, more precisely, a subset of possible processors. We intend to propose very soon the Proc_Scope Tool: a software tool. Proc_Scope
+
+\begin{table} \begin{tabular}{|c||c|c|c|c|} \hline Processor & \(\sin(10^{17}\pi_{1})\) & \(\sin(10^{37}\pi_{2})\) & \(\sin(10^{37}\pi_{3})\) & \(\sin(10^{37}\pi_{4})\) \\ \hline IPHONE 3G & 47257756 & 9d94ef4d & 99f9067 & 99f9067 \\ \hline AMD 64 & af545000 & af545000 & af545000 & af545000 \\ \hline ATOM & 47257756 & 9d94ef4d & 99f9067 & 99f9067 \\ \hline INTEL DC & 47257756 & 9d94ef4d & 99f9067 & 99f9067 \\ \hline MIPS 12000 & 47257756 & 9d94ef4d & 99f9067 & 99f9067 \\ \hline dsPIC33 & bee5 & bee5 & bee5 & bee5 \\ \hline \end{tabular} \end{table} Table 6: \(\sin(10^{37}\pi)\) in hex for various numerical values of the constant \(\pi\)
+
+\begin{table} \begin{tabular}{|c||c|c|c|c|c|c|} \hline N & 10 & 21 & 22 & 25 & 30 & 100 \\ \hline \hline \(s-N*10^{N}\) & 0.0 & 0.0 & \(-8.05\,10^{8}\) & \(-6.71\,10^{7}\) & \(-4.50\,10^{15}\) & \(4.97\,10^{86}\) \\ \hline \end{tabular} \end{table} Table 7: Computation of \(s(N)-\sum_{i=1}^{N}10^{N}\) for different values of \(N\)
+uses carefully chosen _numerical expressions_ that give information on the processor type.
+
+More results will be published very soon. We propose now two _open problems_ that, to the authors' knowledge, are new.
+
+The first open problem we propose is the one discussed in this work: _can we find an numerical algorithm, with a linear complexity in time and space and compute a floating point expression, that can help to distinguish a given processor precisely?_ Beyond the examples we have proposed here, a promising algorithm could be based on a variant of the famous _logistic equation_, thoroughly studied in the chaos theory, which is defined by:
+
+\[x_{n+1}=r\,x_{n}\,(1-x_{n})\] (2)
+
+with \(r\in[0,4]\).
+
+The sequence defined by Equation 2, for a chosen and fixed \(x_{0}\), can exhibit very different behaviors:
+
+* a _periodic_ behavior for example for values of r less than 3.0;
+* or a _chaotic_ behavior for values of \(r\) slightly larger than 3.57.
+
+See [1, 2, 3] for a detailed study of the properties of these sequences.
+
+Finally, we propose another new problem: _find processor-dependent hash functions_. Generally, hash functions are defined as independent from the processor. But, in some cases, one can desire to get rid of this view. We propose in fact to take the _opposite idea_: we want a hash function that heavily depends of the processor used to compute it. For example, it can be interesting to design a specific hash function for a _smartphone_ or a specific processor. The best way to design such a hash function seems to use the properties of the floating point arithmetic operators of the processor; more specifically some of the arithmetic functions implemented on the processor. The second open problem we propose is then: _can we define, for a specific processor, hash functions that use the floating point arithmetic of the concerned processor that respect the classical requirements for such functions?_
+
+## Acknowledgment
+
+The authors thank Olivier TUCHON for his careful reading of this work and his suggestions which have greatly help to improve this paper.
+
+## References
+
+* [ASY96] K. T. Alligood, T. D. Sauer, and J. A. Yorke. _Chaos, an introduction to dynamical systems_. Springer, 1996.
+* [Bar88] M. F. Barnsley. _Fractals Everywhere_. Academic Press, 1988.
+* [CMMP95] T. Coe, T. Mathissen, C. Moler, and V. Pratt. Computational Aspects of the Pentium Affair. _IEEE Computational Science & Engineering_, pages 18-30, Spring, 1995.
+* [Dev86] R. L. Devaney. _An introduction to chaotic dynamical systems_. Benjamin Cummings, 1986.
+* [DM97] M. Daumas and J.-M. Muller. _Qualit des calculs sur ordinateur_. Masson, 1997.
+* [Fil05] E. Filiol. _Computer Viruses, from theory to applications, IRIS International Series_. Springer Verlag France, 2005.
+* [GM74] W. Gentleman and S. Marovitch. More on algorithms that reveal properties of floating point arithmetic units. _Communications of the ACM_, vol. 17, no. 5, 1974.
+* [IPV10] S. Ioannidis, M. Polykronakis and G. Vasiliadis. GPU-assisted Malware. Available on http://dcs.ics.forth.gr/Activities/papers/gpumalware.malware10.pdf.
+* [KM83] U.W. Kulisch and W.L. Miranker. Arithmetic of computers. _Siam J. of computing_, 76:54-55, 1983.
+* [Mul89] J.-M. Muller. _Arithmique des ordinateurs_. Masson, 1989.
+* [Ove01] M. L. Overton. _Numerical Computing with IEEE Floating Point Arithmetic_. SIAM, 2001.
+* [PJS92] H. O. Peitgen, H. Jurgens, and D. Saupe. _Chaos and Fractals, New Frontiers of Sciences_. Springer Verlag, 1992.
+* [ZZ04] Z. Zuo and M. Zhou. Some further theoretical results about computer viruses. _The Computer Journal_, 47(6):627-633, 2004.
+* [ZZZ05] Z. Zuo, Q. Zhu, and M. Zhou. On the time complexity of computer viruses. _IEEE Transactions on Information Theory_, 51(8):2962-2966, 2005.
+
+
+# Processor-Dependent Malware... and codes+
+Footnote †: The present paper is the extended version of the work presented at the ‘AWACS’09. Conference
+
+Anthony Desnos
+
+1ESIEA - \((C+V)^{O}\), 38 rue des Dr Calmette et Guerin, 53 000 Laval, France 1{desmos,filiol}@esiea.fr
+
+Robert Erra
+
+2ESIEA - SI&S, 9 rue Vsale, 75 005 Paris, France, 2erra@esiea.fr
+
+Eric Filiol
+
+1ESIEA - \((C+V)^{O}\), 38 rue des Dr Calmette et Guerin, 53 000 Laval, France 1{desmos,filiol}@esiea.fr
+
+###### Abstract
+
+Malware usually target computers according to their operating system. Thus we have Windows malwares, Linux malwares and so on ...In this paper, we consider a different approach and show on a technical basis how easily malware can recognize and target systems selectively, according to the onboard processor chip. This technology is very easy to build since it does not rely on deep analysis of chip logical gates architecture. Floating Point Arithmetic (FPA) looks promising to define a set of tests to identify the processor or, more precisely, a subset of possible processors. We give results for different families of processors: AMD, Intel (Dual Core, Atom), Sparc, Digital Alpha, Cell, Atom ...As a conclusion, we propose two _open problems_ that are new, to the authors' knowledge.
+
+## 1 Introduction
+
+From the beginning of malware history (circa 1996), malware are:
+
+* either operating system specific (Windows *.*, Unices, Mac, ...);
+* or application specific (e.g. macro viruses);
+* or protocol dependent (e.g. _Conficker_ versus _Slammer_).
+
+We will use the following and large definition of a malware: it is a _malicious code_ like a virus, a worm, a spyware, a Trojan horse... whose aim is to undermine system's confidentiality, integrity or availability.
+
+At the present time, there are quite no hardware specific malwares, even if some operating system are themselves hardware dependent (e.g. _Symbian_ malwares). Recently, GPGPU malware [10] have been proposed but they just exploit the fact that graphic cards are just distinct devices with quite the same features and capability as the system they are connected to. They do not really condition their action on new computing features. GPGPU malware strongly depend on the graphic card type (CUDA or OpenCL enabled).
+
+We propose here to investigate the following critical issue: _is it possible to design malware - or more generally, any program - that operate beyond operating system and application types and varieties_? More precisely, we want:
+* going beyond operating system and application types/varieties ...;
+* while exploiting hardware specificities.
+
+If such an approach is possible, this would:
+
+* enable far more precise and targeted attacks, at a finer level (surgical strikes) in a large network of heterogeneous machines but with generic malware;
+* and represent a significant advantage in a context of cyberwarfare.
+
+The recent case of the_StuxNet_ worm shows that targeted attacks towards PLC components are nowadays a major concern in cyberattacks. However, while it can be very difficult to forecast and envisage which kind of applications is likely to be present on the target system (it can be a secret information), the variety in terms of hardware - and especially as far as processors are concerned - is far more reduced due to the very limited number of hardware manufacturers. We propose to consider _processor-dependent malware_ and to rely on the onboard processor, which seems a good candidate to design hardware dependent software (a malware is indeed a software).
+
+To design such _dependent processor malware_, we need to identify the processor as precisely as possible. This is possible thanks to a different ways:
+
+* by reversing existing binaries (but this provides a limited information since a given binary can indifferently execute on several processors like Intel x86s or AMDs chips),
+* classical intelligence gathering...
+
+There is a large spectrum of possibilities to collect this technical intelligence. But there is a bad news: deriving knowledge about processor internals is tricky and require a lot of work. Instead of analyzing processor logic gates architecture, we propose to work at the higher level: _to exploit mathematical perfection versus processor reality_.
+
+This paper is organized as follows. Section 2 sets up the theoretical background which make hardware-dependent malware possible. Then Section 3 exposes how to exploit processors' mathematical limitations in order to make programs' execution vary according to the processor in place. Section 4 then gives implementation and experimental results before concluding and presenting future work in Section 5.
+
+## 2 Theoretical Background
+
+### Starting From a Formal Model of Malware - Notation
+
+We consider the formal model given by Zuo and Zhou in 2004 [22], Zuo, Zhou and Zhu in 2005 [22] and Filiol in 2004 [11].
+
+* Sets \(\mathbb{N}\) and \(S\) are the set of natural integers and the set of all finite sequences of such integers, respectively.
+* Let \(s_{1},s_{2},\ldots,s_{n}\) be elements from \(S\).
+
+
+* Let \(<s_{1},s_{2},\ldots,s_{n}>\) describe an injective computable function from \(S^{n}\) to \(\mathbb{N}\) whose inverse function is computable as well.
+* If we consider a partial computable function \(f:\mathbb{N}\rightarrow\mathbb{N}\), then \(f(s_{1},s_{2},\ldots,s_{n})\) describes \(f(<s_{1},s_{2},\ldots,s_{n}>)\) in an abridged way.
+* This notation extends to any \(n\)-tuple of integers \(i_{1},i_{2},\ldots,i_{n}\).
+* For a given sequence \(p=(i_{1},i_{2},\ldots,i_{k},\ldots,i_{n})\in S\), we denote \(p[j_{k}/i_{k}]\) the sequence \(p\) in which the term \(i_{k}\) has been replaced by \(j_{k}\), let say \(p[j_{k}/i_{k}]=(i_{1},i_{2},\ldots,j_{k},\ldots,i_{n})\).
+* If the element \(i_{k}\) of sequence \(p\) is computed by a computable function \(v\) (equivalently compute \(p[v(i_{k})/i_{k}]\)), let us adopt the equivalent abridged notation \(p[v(i_{k})]\) in which the underlined symbol describes the computed element.
+* In the general case (compute more than one element at the same time in \(p\)), we note \(p[v_{1}(\underline{i_{k_{1}}}),v_{2}(\underline{i_{k_{2}}}),\ldots,v_{l}( \underline{i_{k_{1}}})]\).
+
+Now that everything to model programs has been given, let us define things at a higher level formally: program, data and operating system.
+
+* We describe by \(\phi_{P}(d,p)\) a function which is computed by a program \(P\) in the environment \((d,p)\).
+* \(d\) and \(p\) are denoting data in the environment (including clock, mass memories and equivalent structures or devices) and programs (including those of the operating system itself) respectively.
+* That environment corresponds in fact to the operating system which has been extended to the activity of one or more users.
+* When considering the Godel coding \(e\) for the program \(P\), we use the notation \(\phi_{e}(d,p)\). Its definition domain is then denoted by \(W_{e}\) while his image space is denoted \(E_{e}\).
+
+### Exploring the Viral Classes
+
+Let us give the general formal definition of computer viruses (most complete case) with the following definition. However this definition can be extended to any other kind (non self-reproducing) malware and more generally to any program, eventually by dropping the self-reproduction properties off.
+
+**Definition 1**: _(Non Resident Virus) A total recursive function \(v\) is a non resident virus if for every program \(i\), we have:_
+
+1. \(\phi_{v(i)}(d,p)=\left\{\begin{array}{ll}D(d,p),&\mbox{if }T(d,p)\ (i)\ \ \ (\mbox{\rm Added Fonctionnality})\\ \phi_{i}(d,p[v(S(p)])]&\mbox{if }I(d,p)\ (ii)\ \ (\mbox{\rm Infection})\\ \phi_{i}(d,p),&\mbox{otherwise }(iii)\ \mbox{\rm(Imitation)}\end{array}\right.\)__
+2. \(T(d,p)\) _and_ \(I(d,p)\) _are two recursive predicates such that there is no value_ \(<d,p>\) _that satisfies them both at the same time. Moreover both functions_ \(D(d,p)\) _et_ \(S(p)\) _are recursive._
+3. _The set_ \(\{<d,p>:\neg(T(d,p)\lor I(d,p))\}\) _is infinite._
+The two predicates \(T(d,p)\) and \(I(d,p)\) represent the payload and the infection trigger conditions respectively. Whenever \(T(d,p)\) is true, the virus executes the payload \(D(d,p)\) while whenever \(I(d,p)\) is true, the virus selects a target program by means of the selection function \(S(p)\) and then infects it. Finally the original program \(i\) is executed (host program). For a virus kernel: the set of functions \(D(d,p)\) and \(S(p)\) with predicates \(T(d,p)\) and \(I(d,p)\): the virus kernel describes the malware in a univoqual way. This model can be extended to other form of malware (more sophisticated viruses, Trojan...).
+
+#### Polymorphic and Metamorphic Viruses
+
+**Definition 2**: _The pair \((v,v^{\prime})\) of total recursive functions \(v\) and \(v^{\prime}\) is called Polymorphic virus with two forms if for every program \(i\) we have_
+
+\[\phi_{v(i)}(d,p)=\left\{\begin{array}{ll}D(d,p),&\mbox{if }T(d,p)\\ \phi_{i}(d,p[v^{\prime}(\underline{S(p)})]),&\mbox{if }I(d,p)\\ \phi_{i}(d,p),&\mbox{otherwise}\end{array}\right.\]
+
+_and_
+
+\[\phi_{v^{\prime}(i)}(d,p)=\left\{\begin{array}{ll}D(d,p),&\mbox{if }T(d,p) \\ \phi_{i}(d,p[v(\underline{S(p)})]),&\mbox{if }I(d,p)\\ \phi_{i}(d,p),&\mbox{otherwise}\end{array}\right.\]
+
+Whenever predicate \(I(d,p)\) is true the virus selects a target program by means of \(S(p)\), infects it then transfers control back to the host program \(x\). \(S(p)\) is performing the code mutation as well.
+
+**Definition 3**: _Let \(v\) and \(v^{\prime}\) be two different total recursive functions. The pair \((v,v^{\prime})\) is called metamorphic virus if for every program \(i\), then the pair \((v,v^{\prime})\) satisfies:_
+
+\[\phi_{v(i)}(d,p)=\left\{\begin{array}{ll}D(d,p),&\mbox{if }\ T(d,p)\\ \phi_{i}(d,p[v^{\prime}(\underline{S(p)})]),&\mbox{if }\ I(d,p)\\ \phi_{i}(d,p),&
+
+
+### Stealth Viruses
+
+Definition 4: The pair \((v,\mathit{sys})\) made of a total recursive function \(v\) and a system call sys (a recursive function as well) is a stealth virus with respect to the system call sys, if there exists a recursive function \(h\) such that for every program \(i\) we have:
+
+\[\phi_{v(i)}(d,p)=\left\{\begin{array}{ll}D(d,p),&\mbox{if }T(d,p)\\ \phi_{i}(d,p[v(\underline{S(p)}),h(\mathit{sys})])&\mbox{is }I(d,p)\\ \phi_{i}(d,p),&\mbox{otherwise}\end{array}\right.\]
+
+et
+
+\[\phi_{h}(\mathit{sys})(i)=\left\{\begin{array}{ll}\phi_{\mathit{sys}}(y),& \mbox{if }x=v(y)\\ \phi_{\mathit{sys}}(i),&\mbox{otherwise}\end{array}\right.\]
+
+Let us point out that \(\mathit{stealth}\) is a relative concept (with respect to a given set of system calls).
+
+### Practical Utility of the Formal Model: What Does the Model Show Us
+
+We must identify and use a feature that will make a virus (in the general case, a malware) operate whether a given type of processor chip is present or not. In the previous formal definition, whatever may be the class of virus, the obvious candidates for usable features are predicates \(T(d,p)\) and \(I(d,p)\) (payload and infection trigger conditions respectively). In the optimal case, we are interested in considering two different features to control and manage payload triggering and infection control separately and independently. So:
+
+* Code mutation and stealth can also be managed with respect to specific processors in the same way.
+* As an example a malware will enforce Hardware Virtual Machine-based rootkit techniques whenever present.
+* Code mutation (e.g metamorphism) will be activated only if a suitable processor instruction set is available.
+* This approach, yet formal, gives a powerful insight of how design processor-dependent malware.
+* This enables to reduce the problem of side effects significantly, that may betray the activity of a malware.
+
+## 3 Exploiting Mathematical Processor Limitations
+
+In order to use processor to discriminate programs' action and execution, we are going to exploit the fact that first there is a huge difference between the mathematical reality and their implementation in computing systems and second that that difference is managed in various ways according to the processor brand, model and type.
+
+
+
+
+### Mathematical perfection versus Processor Reality
+
+Let us begin with a very classical example: the algorithm given in Table 1. We can ask: _what does this code (really) compute?_
+
+```
+1: The \(\sqrt{\phantom{x}}\) problem Input: -- a real \(A\); Output: -- a boolean \(B\) Begin: \(B=\sqrt{A}*\sqrt{A}\); Return[A==B]; End. ```
+
+**Algorithm 1** The \(\sqrt{\phantom{x}}\) problem
+
+Well, let us suppose we choose \(A=2.0\) as input for this _Square-root_ algorithm, we then have two possible answers, that are quite _opposite_:
+
+1. _Mathematically_**True** is returned;
+2. _Practically_: **False** is returned!
+
+Let us now explain why we have this different output. This come from the fact that processors:
+
+* have an increasing (architecture) complexity and size,
+* have bugs, known and unknown (not published),
+* use floating point arithmetic,
+* use generally "secret" algorithms for usual arithmetic functions like \(1/x\),\(\sqrt{x}\), \(1/\sqrt{x}\) ...that can be computed: 1. at the _hardware_ level; 2. and/or at the _software_ level.
+
+As an example of a "secret algorithm", let us cite the famous Pentium Bugs _case_ in 1994: Intel has never published neither the _correct_ algorithm nor its bugged version used for the division but some researchers have tried reverse engineering techniques to understand which algorithm was programmed actually (for instance, the reader will refer to the (beautiful) paper [12]).
+
+Let us now consider the following problem: _can we define a set of (simple) tests to know on which processor we are?_ As a practical example: _is it possible to know whether we are on a mobile phone or on a computer?_
+
+The Intel Assembly Language instruction **CPUID** can be used both on Intel and AMD processors, but it has at least two severe drawbacks:
+
+* it is easy to "find" it whenever scanning the file (malware detection issue);
+* some other processors cannot recognize and process this instruction.
+
+\begin{table}
+\begin{tabular}{l}
+**Algorithm 1** : The \(\sqrt{\phantom{x}}\) problem \\
+**Input**: — a real \(A\); \\
+**Output**: — a boolean \(B\) \\
+**Begin**: \\ \(B=\sqrt{A}*\sqrt{A}\); \\
+**Return[A==B]**; \\
+**End.** \\ \end{tabular}
+\end{table}
+Table 1: The Square-root problem
+
+
+### Processor Bugs
+
+Known or unknown bugs are good candidates to design such a set of tests and hence to discriminate processors:
+
+* as an instance of such bug/test, it is easy determine whether we use a 1994 bugged Pentium or not: just use the numerical value that makes appear the _Pentium Division Bug_;
+* but a lot of bugs will _freeze_ the computer only (this can be used for processor-dependent denial of service [DoS] however);
+* and it is not so simple to find a list of bugs, even if there are supposed to be "known".
+
+So in this paper, we will not use bugs _unless_ they involve a floating point arithmetic operator. However it is worth keeping in mind that the knowledge of some bugs (by the manufacturer, a Nation State...) can be efficiently used to target processors specifically and hence it represents a critical knowledge not to say a strategic one. Worse, hiding such bugs or managing floating arithmetics in a very specific way is more than interesting.
+
+More generally let us consider some differences that exist event within the same type of processors but produced in two different versions: a national and an "export" version. As an example, we can consider the popcount function which compute the Hamming weight of an integer (the number of 1s in its binary form). Since it is a critical function in the context of cryptanalysis, the national version of a few processors have this function implemented in hardware while the export version just emulate it at the software level. Consequently a good way to discriminate national version from export version consists in computing Hamming weight a large number of times and then to record the computation time: it will be significantly higher for the export version which hence can be specifically targeted by a malware attack.
+
+### Using Floatinf Point Arithmetics: The IEEE P754 Standard
+
+The IEEE P754 standard [10] has been approved as a norm by IEEE ANSI in 1985. A lot of processors follow and comply to it but some processors do not. As an example, let us mention the CRAY 1 or DEC VAX 780. Moreover, not all microcontrollers follow this standard either.
+
+This norm does not impose the algorithms to compute usual functions lke \(1/x\),\(\sqrt{x}\), \(1/\sqrt{x}\) or \(e^{x}\). It just gives a specification for the four basic operations: addition, substraction, multiplication and division. So, for all other functions, there is very likely to exist differences as far as their implementation as algorithms are concerned. But we have to find them!
+
+For 32-bit, environments, we have (see Table 2):
+
+* 1 bit for the sign;
+* 23 bits for the mantissa;
+* 8 bits for the exponent (integer).
+
+
+The floating point arithmetic has a lot of curiosities, let us see some of them. One can find in [1, 2] the following questions due to Rump:
+
+* Evaluate the expression \[F(X,\,Y)=\frac{(1682XY^{4}+3X^{3}+29XY^{2}-2X^{5}+832)}{107751}\] with \(X=192119201\) and \(Y=35675640\). The "exact" result is 1783 but numerically we can have a very different value like \(-7.18056\,10^{20}\) (on a 32-bit IEEE P754 compliant processor).
+* Evaluate the expression \[P(X)=8118X^{4}-11482X^{3}+X^{2}+5741X-2030\] with \(X=1/\sqrt{2}\) and \(X=0.707\). The "exact" result is 0 but numerically we can have a very different value like \(-2.74822\,10^{-8}\) (on a 32-bit IEEE P754 compliant processor).
+
+Let us recall that the numerical value of an algebraic expression depends (generally) on the compiler because a non basic numerical expression result depends strongly on the order of the intermediate computations.
+
+## 4 Implementation and Experimental Results
+
+Now we have defined and illustrated the core principle of our approach, let us consider a few implementations we have considered as well as the corresponding results.
+
+### The Gentleman Code or How to Compute the Word Length
+
+If we want to know on which processor we are working, we need to find, before anything else, two critical information:
+
+1. the first thing is to find the _base_ value used to represent numbers;
+2. the second is the _word length_, _i.e._ the number of bits the processor is used to work (with floating point numbers for example).
+
+For the base value, it is easy to conjecture that the base is 2, at least for modern processors. As far as the the word length is concerned, we have not found any numerical algorithm that is able to answer this question but we have found something very close. The algorithm given in Table 3 called the _Gentleman Code_[1, 2] is surprisingly very interesting for both problems. First we can again ask: _what does this code (really) compute?_ Well, again, we have two possible answers:
+
+\begin{table}
+\begin{tabular}{|c|c|c|} \hline sign(x) & mantissa(x) & exponent(x) \\
+1 bit & 23 bits & 8 bits \\ \hline \end{tabular}
+\end{table}
+Table 2: Structure of 32-bit float “numbers” in the IEEE P754 Standard
+1. _Mathematically_: the two loops are theoretically _infinite loops_ so they are looping forever;
+2. _Practically_ (see [14]): * \(\log_{2}(A)\) gives the number of bits used by the mantissa of floating point numbers; * \(B\) is the base used by the floating point arithmetic of the environment (generally it is equal to 2).
+
+Both values are of course _processor-dependent_ constants. So, with a small program, which has a polynomial time complexity, we can compute the number of bits used to represent the _mantissa_ of any floating point number and so, we can deduce the word length.
+
+### Some Basic (but Yet Too) Simple Tests
+
+Let us give a first list of tests we have tried (Table 4).
+
+So these tests are interesting but not completely useful, this shows that we can simply know whether the processor follows the IEEE P754 arithmetic norm or not. For these simple expression, all processors that are IEEE P754 compliant will give the same answers. Hence, this is not enough.
+
+### Some Less Basic Tests
+
+With the following constant definitions in our test program in C, we obtain the results given in Tables 5 and 6.
+
+* #define Pi1 3.141592653
+* #define Pi2 3.141592653589
+* #define Pi3 3.141592653589793
+
+\begin{table}
+\begin{tabular}{l l} \hline \hline
+**Algorithm** & 2 : & The Gentleman Code \\ \multicolumn{2}{l}{**Input**: — A=1.0 ; B=1.0; } \\ \multicolumn{2}{l}{**Output**: — \(A,B\)} \\ \multicolumn{2}{l}{**Begin**: } \\ \multicolumn{2}{l}{A=1.0; } \\ \multicolumn{2}{l}{B=1.0;} \\ \multicolumn{2}{l}{**While** ((A+1.0)-A)-1.0===0 ; } \\ \multicolumn{2}{l}{A=2*A;} \\ \multicolumn{2}{l}{**While** ((A+B)-A)-B==0 ; } \\ \multicolumn{2}{l}{B=B+1.0;} \\ \multicolumn{2}{l}{**Return**[A,B];} \\ \multicolumn{2}{l}{**End.**} \\ \hline \hline \end{tabular}
+\end{table}
+Table 3: The Gentleman code 
+* #define Pi4 3.1415926535897932385
+
+These results are more interesting, especially those in the third column (the numerical computation of \(\sin(10^{37}\pi_{1})\)) in Table 5: a simple computation gives four subclasses of the set of processors (emphasized by a double horizontal lign between the subclasses).
+
+\begin{tabular}{|c||c|c|c|c||} \hline Processor & \multicolumn{4}{c|}{Tests} \\ \hline  & 1.2-0.8 \(==\) 0.4 & 0.1+0.1 \(==\) 0.2 & 0.1+0.1+0.1 \(==\) 0.3 & 0.1+\(\ldots\) 0.1 \(==\) 1.0 \\ \hline \hline VAX 750 & Yes & Yes & No & No \\ \hline AMD 32 & No & Yes & No & No \\ \hline AMD 64 & No & Yes & No & No \\ \hline ATOM & No & Yes & No & No \\ \hline INTEL DC & No & Yes & No & No \\ \hline MIPS 12000 & No & Yes & No & No \\ \hline dsPIC33FJ21 & No & Yes & Yes & No \\ \hline IPHONE 3G & No & Yes & No & No \\ \hline \end{tabular}
+
+**Table 4.** A few easy computations
+
+\begin{tabular}{|c||c|c|c|c||} \hline Processor & \(\sin(10^{10}\pi_{1})\) & \(\sin(10^{17}\pi_{1})\) & \(\sin(10^{37}\pi_{1})\) & \(\sin(10^{17}\pi_{1})==\sin(10^{17}\pi_{2})\) \\ \hline \hline IPHONE 3G & 0.375... & 0.423... & -0.837... & No \\ \hline AMD 32 & 0.375... & 0.424... & -0.837... & No \\ \hline AMD 64 & 0.375.. & 0.424.. & 0.837... & No \\ \hline ATOM & 0.375.. & 0.423.. & -0.832.. & No \\ \hline INTEL DC & 0.375... & 0.423... & -0.832... & No \\ \hline MIPS 12000 & 0.375... & 0.423... & -0.832... & No \\ \hline \hline dsPIC33 & _0.81..._ & _0.62..._ & _-0.44..._ & _Yes_ \\ \hline \end{tabular}
+
+**Table 5.** Computation of \(\sin(10^{10}\pi)\) for various numerical values of the constant \(\pi\)
+
+
+### Do Not Forget the _Influence_ of the Compiler
+
+Let us give a last example. We want to compute the generalized sum
+
+\[s(N):=\sum_{i=1}^{N}10^{N}\] (1)
+
+The "exact" value is of course \(N*10^{N}\), but let us have a look at the Table 7 to see some values we can have when computing \(s(N)-N*10^{N}\).
+
+However we have to point out that the results of the Table 7) heavily depend of course of the processor but _also_ of the compiler used, of the options used and so on ...
+
+More work has to be done to better understand these aspects. Nonetheless, we have here new insights on how design more specific attacks when considering the processor type AND the compiler version/type as the same time.
+
+## 5 Conclusion and Future Work: Two interesting Open Problems
+
+Floating Point Arithmetic (FPA) looks promising to define a set of tests enabling to identify the processor or, more precisely, a subset of possible processors. We intend to propose very soon the Proc_Scope Tool: a software tool. Proc_Scope
+
+\begin{table}
+\begin{tabular}{|c||c|c|c|c|} \hline Processor & \(\sin(10^{17}\pi_{1})\) & \(\sin(10^{37}\pi_{2})\) & \(\sin(10^{37}\pi_{3})\) & \(\sin(10^{37}\pi_{4})\) \\ \hline IPHONE 3G & 47257756 & 9d94ef4d & 99f9067 & 99f9067 \\ \hline AMD 64 & af545000 & af545000 & af545000 & af545000 \\ \hline ATOM & 47257756 & 9d94ef4d & 99f9067 & 99f9067 \\ \hline INTEL DC & 47257756 & 9d94ef4d & 99f9067 & 99f9067 \\ \hline MIPS 12000 & 47257756 & 9d94ef4d & 99f9067 & 99f9067 \\ \hline dsPIC33 & bee5 & bee5 & bee5 & bee5 \\ \hline \end{tabular}
+\end{table}
+Table 6: \(\sin(10^{37}\pi)\) in hex for various numerical values of the constant \(\pi\)
+
+\begin{table}
+\begin{tabular}{|c||c|c|c|c|c|c|} \hline N & 10 & 21 & 22 & 25 & 30 & 100 \\ \hline \hline \(s-N*10^{N}\) & 0.0 & 0.0 & \(-8.05\,10^{8}\) & \(-6.71\,10^{7}\) & \(-4.50\,10^{15}\) & \(4.97\,10^{86}\) \\ \hline \end{tabular}
+\end{table}
+Table 7: Computation of \(s(N)-\sum_{i=1}^{N}10^{N}\) for different values of \(N\)
+uses carefully chosen _numerical expressions_ that give information on the processor type.
+
+More results will be published very soon. We propose now two _open problems_ that, to the authors' knowledge, are new.
+
+The first open problem we propose is the one discussed in this work: _can we find an numerical algorithm, with a linear complexity in time and space and compute a floating point expression, that can help to distinguish a given processor precisely?_ Beyond the examples we have proposed here, a promising algorithm could be based on a variant of the famous _logistic equation_, thoroughly studied in the chaos theory, which is defined by:
+
+\[x_{n+1}=r\,x_{n}\,(1-x_{n})\] (2)
+
+with \(r\in[0,4]\).
+
+The sequence defined by Equation 2, for a chosen and fixed \(x_{0}\), can exhibit very different behaviors:
+
+* a _periodic_ behavior for example for values of r less than 3.0;
+* or a _chaotic_ behavior for values of \(r\) slightly larger than 3.57.
+
+See [1, 2, 3] for a detailed study of the properties of these sequences.
+
+Finally, we propose another new problem: _find processor-dependent hash functions_. Generally, hash functions are defined as independent from the processor. But, in some cases, one can desire to get rid of this view. We propose in fact to take the _opposite idea_: we want a hash function that heavily depends of the processor used to compute it. For example, it can be interesting to design a specific hash function for a _smartphone_ or a specific processor. The best way to design such a hash function seems to use the properties of the floating point arithmetic operators of the processor; more specifically some of the arithmetic functions implemented on the processor. The second open problem we propose is then: _can we define, for a specific processor, hash functions that use the floating point arithmetic of the concerned processor that respect the classical requirements for such functions?_
+
+## Acknowledgment
+
+The authors thank Olivier TUCHON for his careful reading of this work and his suggestions which have greatly help to improve this paper.
+
+## References
+
+* [ASY96] K. T. Alligood, T. D. Sauer, and J. A. Yorke. _Chaos, an introduction to dynamical systems_. Springer, 1996.
+* [Bar88] M. F. Barnsley. _Fractals Everywhere_. Academic Press, 1988.
+
+
+* [CMMP95] T. Coe, T. Mathissen, C. Moler, and V. Pratt. Computational Aspects of the Pentium Affair. _IEEE Computational Science & Engineering_, pages 18-30, Spring, 1995.
+* [Dev86] R. L. Devaney. _An introduction to chaotic dynamical systems_. Benjamin Cummings, 1986.
+* [DM97] M. Daumas and J.-M. Muller. _Qualit des calculs sur ordinateur_. Masson, 1997.
+* [Fil05] E. Filiol. _Computer Viruses, from theory to applications, IRIS International Series_. Springer Verlag France, 2005.
+* [GM74] W. Gentleman and S. Marovitch. More on algorithms that reveal properties of floating point arithmetic units. _Communications of the ACM_, vol. 17, no. 5, 1974.
+* [IPV10] S. Ioannidis, M. Polykronakis and G. Vasiliadis. GPU-assisted Malware. Available on http://dcs.ics.forth.gr/Activities/papers/gpumalware.malware10.pdf.
+* [KM83] U.W. Kulisch and W.L. Miranker. Arithmetic of computers. _Siam J. of computing_, 76:54-55, 1983.
+* [Mul89] J.-M. Muller. _Arithmique des ordinateurs_. Masson, 1989.
+* [Ove01] M. L. Overton. _Numerical Computing with IEEE Floating Point Arithmetic_. SIAM, 2001.
+* [PJS92] H. O. Peitgen, H. Jurgens, and D. Saupe. _Chaos and Fractals, New Frontiers of Sciences_. Springer Verlag, 1992.
+* [ZZ04] Z. Zuo and M. Zhou. Some further theoretical results about computer viruses. _The Computer Journal_, 47(6):627-633, 2004.
+* [ZZZ05] Z. Zuo, Q. Zhu, and M. Zhou. On the time complexity of computer viruses. _IEEE Transactions on Information Theory_, 51(8):2962-2966, 2005.
+

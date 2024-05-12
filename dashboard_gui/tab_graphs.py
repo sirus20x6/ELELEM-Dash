@@ -1,9 +1,8 @@
 import pyqtgraph as pg
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar
-from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QTimer
 import psutil
-import GPUtil
+#import GPUtil
 import pyamdgpuinfo
 
 class GraphsTab(QWidget):
@@ -93,17 +92,17 @@ class GraphsTab(QWidget):
 
     def get_gpu_usage(self):
         # NVIDIA GPU Check
-        gpus = GPUtil.getGPUs()
-        if gpus:
-            gpu = gpus[0]  # Assuming single GPU
-            gpu_load = int(gpu.load * 100)
-            vram_load = query_vram_usage
-            return gpu_load, vram_load
+        #gpus = GPUtil.getGPUs()
+        #if gpus:
+        #    gpu = gpus[0]  # Assuming single GPU
+        #    gpu_load = int(gpu.load * 100)
+        #    vram_load = query_vram_usage
+        #    return gpu_load, vram_load
 
         # AMD GPU Check
         if pyamdgpuinfo.detect_gpus():
             first_gpu = pyamdgpuinfo.get_gpu(0)
-            vram_load = first_gpu.query_vram_usage()
+            vram_load = int((first_gpu.query_vram_usage() / first_gpu.memory_info['vram_size']) * 100)
             gpu_load = int(first_gpu.query_load() * 100)
             return gpu_load, vram_load
 

@@ -4,3 +4,5 @@ pyqtgraph
 psutil
 GPUtil
 pyamdgpuinfo
+pyqtgraph
+distutils
