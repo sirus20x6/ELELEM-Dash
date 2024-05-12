@@ -1,0 +1,46 @@
+{
+    "output_hidden_states": {
+        "type": "checkbox",
+        "default": false
+    },
+    "output_attentions": {
+        "type": "checkbox",
+        "default": false
+    },
+    "return_dict": {
+        "type": "checkbox",
+        "default": true
+    },
+    "is_encoder_decoder": {
+        "type": "checkbox",
+        "default": false
+    },
+    "is_decoder": {
+        "type": "checkbox",
+        "default": false
+    },
+    "add_cross_attention": {
+        "type": "checkbox",
+        "default": false
+    },
+    "tie_encoder_decoder": {
+        "type": "checkbox",
+        "default": false
+    },
+    "vocab_size": {
+        "type": "input",
+        "default": "30522"
+    },
+    "hidden_size": {
+        "type": "input",
+        "default": "768"
+    },
+    "num_attention_heads": {
+        "type": "input",
+        "default": "12"
+    },
+    "num_hidden_layers": {
+        "type": "input",
+        "default": "12"
+    }
+}

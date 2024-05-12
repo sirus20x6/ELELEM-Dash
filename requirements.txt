@@ -6,3 +6,5 @@ GPUtil
 pyamdgpuinfo
 pyqtgraph
 distutils
+transformers
+pytorch
