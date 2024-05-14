@@ -1,6 +1,5 @@
 # main_application.py
 from PyQt5.QtWidgets import QMainWindow, QTabWidget
-from settings_tab import SettingsTab
 from config_parser import load_and_parse_ast
 
 class MainApplication(QMainWindow):

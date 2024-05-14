@@ -1,0 +1,53 @@
+{
+    "ConfigurationTab": {
+      "output_hidden_states": {"type": "checkbox", "default": false},
+      "output_attentions": {"type": "checkbox", "default": false},
+      "return_dict": {"type": "checkbox", "default": true},
+      "is_encoder_decoder": {"type": "checkbox", "default": false},
+      "is_decoder": {"type": "checkbox", "default": false},
+      "add_cross_attention": {"type": "checkbox", "default": false},
+      "tie_encoder_decoder": {"type": "checkbox", "default": false},
+      "vocab_size": {"type": "input", "default": "30522"},
+      "hidden_size": {"type": "input", "default": "768"},
+      "num_attention_heads": {"type": "input", "default": "12"},
+      "num_hidden_layers": {"type": "input", "default": "12"}
+    },
+    "LoggingTab": {
+      "verbosity": {"type": "dropdown", "options": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], "default": "WARNING"},
+      "progress_bar": {"type": "checkbox", "default": true},
+      "formatting": {"type": "dropdown", "options": ["default", "explicit"], "default": "default"}
+    },
+    "TrainerTab": {
+      "output_dir": {"type": "input", "default": "./model_output"},
+      "do_train": {"type": "checkbox", "default": false},
+      "do_eval": {"type": "checkbox", "default": false},
+      "optimizer": {"type": "dropdown", "options": ["AdamW", "AdaFactor"], "default": "AdamW"},
+      "eps": {"type": "input", "default": "1e-06"},
+      "schedule": {"type": "dropdown", "options": ["Constant", "Cosine", "Linear"], "default": "Constant"},
+      "num_train_epochs": {"type": "input", "default": "3"},
+      "per_device_train_batch_size": {"type": "input", "default": "8"},
+      "per_device_eval_batch_size": {"type": "input", "default": "8"},
+      "warmup_steps": {"type": "input", "default": "500"},
+      "learning_rate": {"type": "input", "default": "5e-5"},
+      "weight_decay": {"type": "input", "default": "0.01"},
+      "adam_beta1": {"type": "input", "default": "0.9"},
+      "adam_beta2": {"type": "input", "default": "0.999"},
+      "adam_epsilon": {"type": "input", "default": "1e-8"},
+      "max_grad_norm": {"type": "input", "default": "1.0"}
+    },
+    "PipelinesTab":{
+      "pipeline_type": {"type": "dropdown", "options": ["text-classification", "question-answering", "ner"], "default": "text-classification"},
+      "model": {"type": "input", "default": "bert-base-uncased"},
+      "device": {"type": "dropdown","options": ["GPU", "CPU"], "default": "CPU"}
+  },
+  "ModelConfigurationTab":{
+    "model_path": {"type": "input", "default": "./models"},
+    "model_type": {"type": "dropdown", "options": ["PreTrained", "TFPreTrained", "FlaxPreTrained"], "default": "PreTrained"},
+    "tokenizer_path": {"type": "input", "default": "./tokenizer"},
+    "special_tokens": {"type": "input", "default": "./special_tokens"},
+    "max_length": {"type": "input", "default": "512"},
+    "tokenizer": {"type": "input","label": "Tokenizer Path", "default":"tokenizer"},
+    "data_directory": {"type": "input", "label": "Data Directory","default":"./data/"},
+    "use_cache": {"type": "checkbox", "default": true}
+}
+}

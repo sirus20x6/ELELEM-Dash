@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QHBoxLayout
-from .gui_utils import SettingsTab
+from ..dashboard_gui.gui_utils import SettingsTab
 
 class TrainerTab(QWidget, SettingsTab):
     def __init__(self, settings_file="trainer_settings.json"):

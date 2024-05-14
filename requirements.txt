@@ -8,3 +8,5 @@ pyqtgraph
 distutils
 transformers
 pytorch
+torchvision
+datasets

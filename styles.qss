@@ -1,0 +1,94 @@
+QMainWindow {
+    background-color: #2B2B2B;  /* Dark slate background */
+    color: #ffffff;  /* Light grey text for better readability */
+}
+QWidget { /* This will style all QWidgets, be specific if needed */
+    background: #969ca4;  /* Consistent background color */
+}
+
+QPushButton {
+    background-color: #005599;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 20px;
+    font-family: 'Segoe UI', Arial;
+}
+
+QPushButton:hover {
+    background-color: #006699;
+}
+
+QLabel, QLineEdit, QComboBox {
+    font-size: 20px;
+    padding: 2px;
+    margin: 4px;
+    font-family: 'Segoe UI', Arial; /* Consistent font style */
+}
+
+QLineEdit {
+    border: 1px solid #555;  /* Darker border for better visibility */
+    border-radius: 4px;
+    background-color: #40578b;  /* Darker background for edit boxes */
+    color: #fff;  /* Lighter text color for readability */
+    font-size: 20px;
+    font-family: 'Segoe UI', Arial;
+}
+
+QComboBox {
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 1px 18px 1px 3px;  /* Room for the dropdown arrow */
+    min-width: 6em;
+    background-color: #40578b;
+    color: #fff;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left-width: 1px;
+    border-top-right-radius: 3px; /* same radius as the QComboBox */
+    border-bottom-right-radius: 3px;
+    background: #2B2B2B;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #547;  /* Dark background for the dropdown items */
+    color: #CCC;  /* Light text color for items */
+    selection-background-color: #005599;  /* Background of selected item */
+    selection-color: white;  /* Text color of selected item */
+}
+
+QComboBox::down-arrow {
+    image: url(./resources/pcgkre.svg); /* Add your path */
+}
+
+QTabWidget::tab-bar {
+    alignment: center;
+}
+
+QTabBar::tab {
+    background: #2B2B2B;  /* Dark slate background */
+    color: #ffffff;  /* Light grey text for readability */
+    padding: 10px;
+    border: 1px solid #555;
+    min-width: 80px;  /* Adjust the minimum width of the tab */
+}
+
+QTabBar::tab:selected {
+    background: #005599;
+    color: #ffffff;
+}
+
+QTabBar::tab:hover {
+    background: #006699;
+}
+
+QTabWidget::pane { /* The content part of the QTabWidget */
+    background: #2B2B2B;  /* Dark blue slate */
+    border-top: 2px solid #005599;  /* A line to visually separate tabs from content */
+}
+

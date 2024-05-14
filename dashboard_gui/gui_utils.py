@@ -1,8 +1,17 @@
-from PyQt5.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox
+import json
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox
 
 class SettingsTab:
-    def __init__(self):
+    def __init__(self, tab_name, settings_file="all_settings.json"):
         self.inputs = {}
+        self.settings_file = settings_file
+        self.tab_name = tab_name
+        self.load_settings()
+
+    def load_settings(self):
+        with open(self.settings_file, 'r') as file:
+            all_settings = json.load(file)
+            self.settings = all_settings.get(self.tab_name, {})
 
     def add_setting(self, layout, key, setting):
         hbox = QHBoxLayout()
@@ -35,3 +44,13 @@ class SettingsTab:
             elif isinstance(widget, QComboBox):
                 collected_settings[key] = widget.currentText()
         return collected_settings
+    
+    def load_stylesheet(file_path):
+        try:
+            with open(file_path, "r") as file:
+                stylesheet = file.read()
+                return stylesheet
+        except IOError as e:
+            print(f"Error opening stylesheet file: {e}")
+            return ""
+

@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileSystemModel, QTreeView, QTextEdit, QSplitter
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileSystemModel, QTreeView, QTextEdit, QSplitter, QPushButton
 from PyQt5.QtCore import QDir, Qt
-
+from torchvision import datasets, transforms
+import torch
 
 class MyTreeView(QTreeView):
     def __init__(self, parent=None):
@@ -46,17 +47,20 @@ class CheckableFileSystemModel(QFileSystemModel):
     
     
 
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QPushButton, QTextEdit, QLineEdit, QSplitter
+from PyQt5.QtWidgets import QFileSystemModel
+import datasets  # Make sure to install the 'datasets' library from Hugging Face
+
 class DataManagementTab(QWidget):
     def __init__(self):
         super().__init__()
         self.layout = QVBoxLayout(self)
-        self.training_datasets = []
 
-        self.model = CheckableFileSystemModel('./data')
+        self.model = QFileSystemModel()
         self.model.setRootPath('./data')
         self.tree = QTreeView()
         self.tree.setModel(self.model)
-        self.tree.setRootIndex(self.model.index(self.model.rootPath))
+        self.tree.setRootIndex(self.model.index('./data'))
 
         self.preview = QTextEdit()
         self.preview.setReadOnly(True)
@@ -66,15 +70,33 @@ class DataManagementTab(QWidget):
         self.splitter.addWidget(self.preview)
         self.splitter.setSizes([800, 500])
 
-        self.layout.addWidget(self.splitter)
-        #self.model.disconnect()
-        self.tree.clicked.connect(self.on_item_clicked)
-        #self.model.dataChanged.connect(self.on_item_changed)
-        #self.ignore_data_changed = False
+        self.dataset_path_input = QLineEdit(self)
+        self.dataset_path_input.setPlaceholderText("Enter HuggingFace dataset path")
+        self.load_dataset_button = QPushButton("Load From HuggingFace", self)
+        self.load_dataset_button.clicked.connect(self.load_dataset_from_huggingface)
 
-                
-    def on_item_changed(self, item):
-        print("on_item_changed")
+        self.layout.addWidget(self.splitter)
+        self.layout.addWidget(self.dataset_path_input)
+        self.layout.addWidget(self.load_dataset_button)
+
+        self.tree.clicked.connect(self.on_item_clicked)
+
+    def on_item_clicked(self, index):
+        file_path = self.model.filePath(index)
+        self.preview.setText(open(file_path, 'r').read())
+
+    def load_dataset_from_huggingface(self):
+        dataset_path = self.dataset_path_input.text().strip()
+        if dataset_path:
+            # Assuming dataset_path is in the form 'namespace/dataset_name'
+            namespace, dataset_name = dataset_path.split('/')
+            hf_dataset = datasets.load_dataset(dataset_name, cache_dir='./data', use_auth_token=True, name=namespace)
+            print(f"Dataset {dataset_name} loaded from HuggingFace under namespace {namespace}.")
+        else:
+            print("Please enter a valid HuggingFace dataset path.")
+
+# Note: You may need to adjust the dataset fetching logic depending on the specific format of the dataset paths and any additional parameters.
+
 
             
     def on_item_clicked(self, index):
